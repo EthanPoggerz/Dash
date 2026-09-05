@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 
 function getTodayString() {
   const d = new Date();
-  return d.toISOString().split("T")[0]; // e.g. "2026-09-05"
+  return d.toISOString().split("T")[0];
 }
 
 export default function DashboardPage() {
@@ -70,7 +70,6 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, []);
 
-  // Fetch all students (once userData is loaded)
   useEffect(() => {
     if (!userData) return;
     const fetchStudents = async () => {
@@ -81,7 +80,6 @@ export default function DashboardPage() {
     fetchStudents();
   }, [userData]);
 
-  // Listen to today's attendance records
   useEffect(() => {
     const q = query(collection(db, "attendance"), where("date", "==", today));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -141,188 +139,223 @@ export default function DashboardPage() {
     });
   };
 
-  if (loading) return <p style={{ padding: "40px" }}>Loading...</p>;
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
+        Loading...
+      </div>
+    );
 
   const canPost = userData.role === "beadle" || userData.role === "teacher";
   const canManageSchedule = userData.role === "beadle" || userData.role === "teacher";
   const canMarkAttendance = userData.role === "beadle" || userData.role === "teacher";
 
+  const roleColors = {
+    student: "bg-blue-600",
+    beadle: "bg-purple-600",
+    teacher: "bg-emerald-600",
+  };
+
   return (
-    <div style={{ padding: "40px" }}>
-      <h1>Welcome to DASH</h1>
-      <p>Email: {userData.email}</p>
-      <p>Role: {userData.role}</p>
-
-      <hr style={{ margin: "20px 0" }} />
-
-      {userData.role === "student" && (
-        <div>
-          <h2>Student Dashboard</h2>
-          <ul>
-            <li>View your class schedule</li>
-            <li>See announcements</li>
-            <li>Check your attendance record</li>
-          </ul>
-          <p>
-            Your attendance today:{" "}
-            <strong>{attendanceToday[userData.uid] || "Not marked yet"}</strong>
-          </p>
+    <div className="min-h-screen bg-gray-950 text-white">
+      {/* Header */}
+      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold tracking-tight">DASH</h1>
+          <span className={`text-xs px-2 py-1 rounded-full ${roleColors[userData.role]} capitalize`}>
+            {userData.role}
+          </span>
         </div>
-      )}
-
-      {userData.role === "beadle" && (
-        <div>
-          <h2>Beadle Dashboard</h2>
-          <ul>
-            <li>Mark today's attendance</li>
-            <li>Post an announcement</li>
-            <li>View class schedule</li>
-          </ul>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-400">{userData.email}</span>
+          <button
+            onClick={handleLogout}
+            className="text-sm bg-red-600 hover:bg-red-700 transition px-4 py-2 rounded-lg"
+          >
+            Log Out
+          </button>
         </div>
-      )}
+      </header>
 
-      {userData.role === "teacher" && (
-        <div>
-          <h2>Teacher Dashboard</h2>
-          <ul>
-            <li>View attendance reports</li>
-            <li>Manage class schedule</li>
-            <li>Post announcements</li>
-          </ul>
-        </div>
-      )}
-
-      <hr style={{ margin: "20px 0" }} />
-
-      {canMarkAttendance && (
-        <>
-          <h2>Attendance — {today}</h2>
-          {students.length === 0 && <p>No student accounts found yet.</p>}
-          <div style={{ marginBottom: "30px" }}>
-            {students.map((s) => (
-              <div
-                key={s.id}
-                style={{
-                  border: "1px solid #444",
-                  padding: "10px",
-                  marginBottom: "10px",
-                  maxWidth: "500px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span>{s.email}</span>
-                <span>
-                  <button
-                    onClick={() => handleMarkAttendance(s.id, "present")}
-                    style={{
-                      marginRight: "5px",
-                      padding: "5px 10px",
-                      backgroundColor: attendanceToday[s.id] === "present" ? "green" : "",
-                    }}
-                  >
-                    Present
-                  </button>
-                  <button
-                    onClick={() => handleMarkAttendance(s.id, "absent")}
-                    style={{
-                      padding: "5px 10px",
-                      backgroundColor: attendanceToday[s.id] === "absent" ? "red" : "",
-                    }}
-                  >
-                    Absent
-                  </button>
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+        {/* Role summary card */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          {userData.role === "student" && (
+            <div>
+              <h2 className="text-lg font-semibold mb-3">Student Overview</h2>
+              <ul className="text-gray-300 text-sm space-y-1 list-disc list-inside mb-4">
+                <li>View your class schedule</li>
+                <li>See announcements</li>
+                <li>Check your attendance record</li>
+              </ul>
+              <p className="text-sm">
+                Today&apos;s attendance:{" "}
+                <span className="font-semibold capitalize">
+                  {attendanceToday[userData.uid] || "Not marked yet"}
                 </span>
+              </p>
+            </div>
+          )}
+          {userData.role === "beadle" && (
+            <div>
+              <h2 className="text-lg font-semibold mb-3">Beadle Overview</h2>
+              <ul className="text-gray-300 text-sm space-y-1 list-disc list-inside">
+                <li>Mark today&apos;s attendance</li>
+                <li>Post an announcement</li>
+                <li>View class schedule</li>
+              </ul>
+            </div>
+          )}
+          {userData.role === "teacher" && (
+            <div>
+              <h2 className="text-lg font-semibold mb-3">Teacher Overview</h2>
+              <ul className="text-gray-300 text-sm space-y-1 list-disc list-inside">
+                <li>View attendance reports</li>
+                <li>Manage class schedule</li>
+                <li>Post announcements</li>
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Attendance */}
+        {canMarkAttendance && (
+          <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h2 className="text-lg font-semibold mb-4">Attendance — {today}</h2>
+            {students.length === 0 && <p className="text-gray-400 text-sm">No student accounts found yet.</p>}
+            <div className="space-y-2">
+              {students.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3"
+                >
+                  <span className="text-sm">{s.email}</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleMarkAttendance(s.id, "present")}
+                      className={`text-xs px-3 py-1.5 rounded-lg transition ${
+                        attendanceToday[s.id] === "present"
+                          ? "bg-green-600"
+                          : "bg-gray-700 hover:bg-green-700"
+                      }`}
+                    >
+                      Present
+                    </button>
+                    <button
+                      onClick={() => handleMarkAttendance(s.id, "absent")}
+                      className={`text-xs px-3 py-1.5 rounded-lg transition ${
+                        attendanceToday[s.id] === "absent"
+                          ? "bg-red-600"
+                          : "bg-gray-700 hover:bg-red-700"
+                      }`}
+                    >
+                      Absent
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Schedule */}
+        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4">Class Schedule</h2>
+
+          {canManageSchedule && (
+            <form onSubmit={handleAddClass} className="grid gap-3 sm:grid-cols-3 mb-6">
+              <input
+                type="text"
+                placeholder="Subject (e.g. Math)"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              />
+              <select
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              >
+                <option>Monday</option>
+                <option>Tuesday</option>
+                <option>Wednesday</option>
+                <option>Thursday</option>
+                <option>Friday</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Time (e.g. 9:00 AM - 10:00 AM)"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              />
+              <button
+                type="submit"
+                className="sm:col-span-3 bg-blue-600 hover:bg-blue-700 transition rounded-lg py-2 text-sm font-medium"
+              >
+                Add Class
+              </button>
+            </form>
+          )}
+
+          <div className="space-y-2">
+            {schedule.length === 0 && <p className="text-gray-400 text-sm">No classes scheduled yet.</p>}
+            {schedule.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3"
+              >
+                <span className="text-sm">
+                  <strong>{c.subject}</strong> — {c.day} @ {c.time}
+                </span>
+                {canManageSchedule && (
+                  <button
+                    onClick={() => handleDeleteClass(c.id)}
+                    className="text-xs bg-red-600 hover:bg-red-700 transition px-3 py-1.5 rounded-lg"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             ))}
           </div>
-          <hr style={{ margin: "20px 0" }} />
-        </>
-      )}
+        </section>
 
-      <h2>Class Schedule</h2>
+        {/* Announcements */}
+        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4">Announcements</h2>
 
-      {canManageSchedule && (
-        <form onSubmit={handleAddClass} style={{ marginBottom: "20px", maxWidth: "500px" }}>
-          <input
-            type="text"
-            placeholder="Subject (e.g. Math)"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            style={{ display: "block", width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-          <select
-            value={day}
-            onChange={(e) => setDay(e.target.value)}
-            style={{ display: "block", width: "100%", padding: "8px", marginBottom: "10px" }}
-          >
-            <option>Monday</option>
-            <option>Tuesday</option>
-            <option>Wednesday</option>
-            <option>Thursday</option>
-            <option>Friday</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Time (e.g. 9:00 AM - 10:00 AM)"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            style={{ display: "block", width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-          <button type="submit" style={{ padding: "8px 16px" }}>
-            Add Class
-          </button>
-        </form>
-      )}
-
-      <div style={{ marginBottom: "30px" }}>
-        {schedule.length === 0 && <p>No classes scheduled yet.</p>}
-        {schedule.map((c) => (
-          <div key={c.id} style={{ border: "1px solid #444", padding: "10px", marginBottom: "10px", maxWidth: "500px", display: "flex", justifyContent: "space-between" }}>
-            <span>
-              <strong>{c.subject}</strong> — {c.day} @ {c.time}
-            </span>
-            {canManageSchedule && (
-              <button onClick={() => handleDeleteClass(c.id)} style={{ marginLeft: "10px" }}>
-                Delete
+          {canPost && (
+            <form onSubmit={handlePostAnnouncement} className="mb-6">
+              <textarea
+                value={newAnnouncement}
+                onChange={(e) => setNewAnnouncement(e.target.value)}
+                placeholder="Write an announcement..."
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:border-blue-500"
+                rows={3}
+              />
+              <button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 transition rounded-lg px-4 py-2 text-sm font-medium"
+              >
+                Post Announcement
               </button>
-            )}
+            </form>
+          )}
+
+          <div className="space-y-3">
+            {announcements.length === 0 && <p className="text-gray-400 text-sm">No announcements yet.</p>}
+            {announcements.map((a) => (
+              <div key={a.id} className="bg-gray-800 rounded-lg px-4 py-3">
+                <p className="text-sm">{a.text}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  — {a.author} ({a.role})
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      <hr style={{ margin: "20px 0" }} />
-
-      <h2>Announcements</h2>
-
-      {canPost && (
-        <form onSubmit={handlePostAnnouncement} style={{ marginBottom: "20px" }}>
-          <textarea
-            value={newAnnouncement}
-            onChange={(e) => setNewAnnouncement(e.target.value)}
-            placeholder="Write an announcement..."
-            style={{ display: "block", width: "100%", maxWidth: "500px", padding: "8px", marginBottom: "10px" }}
-          />
-          <button type="submit" style={{ padding: "8px 16px" }}>
-            Post Announcement
-          </button>
-        </form>
-      )}
-
-      <div>
-        {announcements.length === 0 && <p>No announcements yet.</p>}
-        {announcements.map((a) => (
-          <div key={a.id} style={{ border: "1px solid #444", padding: "10px", marginBottom: "10px", maxWidth: "500px" }}>
-            <p>{a.text}</p>
-            <small>— {a.author} ({a.role})</small>
-          </div>
-        ))}
-      </div>
-
-      <button onClick={handleLogout} style={{ padding: "8px 16px", marginTop: "20px" }}>
-        Log Out
-      </button>
+        </section>
+      </main>
     </div>
   );
 }
