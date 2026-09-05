@@ -148,9 +148,13 @@ export default function DashboardPage() {
         const key = `${c.id}_${today}`;
 
         if (diff > 0 && diff <= 5 && !notifiedClasses.current.has(key)) {
-          new Notification("DASH — Class Starting Soon", {
-            body: `${c.subject} starts in ${diff} minute${diff === 1 ? "" : "s"} (${c.time})`,
-          });
+          try {
+            new Notification("DASH — Class Starting Soon", {
+              body: `${c.subject} starts in ${diff} minute${diff === 1 ? "" : "s"} (${c.time})`,
+            });
+          } catch (err) {
+            console.error("Notification failed:", err);
+          }
           notifiedClasses.current.add(key);
         }
       });
