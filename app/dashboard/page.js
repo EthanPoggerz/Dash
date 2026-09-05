@@ -123,6 +123,11 @@ export default function DashboardPage() {
     if (typeof window !== "undefined" && "Notification" in window) {
       setNotifPermission(Notification.permission);
     }
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch((err) => {
+        console.error("Service worker registration failed:", err);
+      });
+    }
   }, []);
 
   const requestNotificationPermission = async () => {
@@ -148,12 +153,21 @@ export default function DashboardPage() {
         const key = `${c.id}_${today}`;
 
         if (diff > 0 && diff <= 5 && !notifiedClasses.current.has(key)) {
-          try {
-            new Notification("DASH — Class Starting Soon", {
-              body: `${c.subject} starts in ${diff} minute${diff === 1 ? "" : "s"} (${c.time})`,
+          const title = "DASH — Class Starting Soon";
+          const body = `${c.subject} starts in ${diff} minute${diff === 1 ? "" : "s"} (${c.time})`;
+
+          if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: "SHOW_NOTIFICATION",
+              title,
+              body,
             });
-          } catch (err) {
-            console.error("Notification failed:", err);
+          } else {
+            try {
+              new Notification(title, { body });
+            } catch (err) {
+              console.error("Notification failed:", err);
+            }
           }
           notifiedClasses.current.add(key);
         }
