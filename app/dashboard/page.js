@@ -29,10 +29,9 @@ function getCurrentDayName() {
   return days[new Date().getDay()];
 }
 
-// Parses a time string like "9:00 AM - 10:00 AM" and returns start time in minutes since midnight
 function parseStartTimeToMinutes(timeStr) {
   if (!timeStr) return null;
-  const startPart = timeStr.split("-")[0].trim(); // "9:00 AM"
+  const startPart = timeStr.split("-")[0].trim();
   const match = startPart.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
   if (!match) return null;
   let [, hours, minutes, meridian] = match;
@@ -119,7 +118,6 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [today]);
 
-  // Request notification permission on load
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       setNotifPermission(Notification.permission);
@@ -133,7 +131,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Check every minute for upcoming classes
   useEffect(() => {
     if (notifPermission !== "granted") return;
 
@@ -149,7 +146,6 @@ export default function DashboardPage() {
         const diff = startMinutes - currentMinutes;
         const key = `${c.id}_${today}`;
 
-        // Notify if class starts within the next 5 minutes and hasn't been notified yet today
         if (diff > 0 && diff <= 5 && !notifiedClasses.current.has(key)) {
           new Notification("DASH — Class Starting Soon", {
             body: `${c.subject} starts in ${diff} minute${diff === 1 ? "" : "s"} (${c.time})`,
