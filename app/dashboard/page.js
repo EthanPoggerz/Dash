@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
@@ -24,6 +24,30 @@ function getTodayString() {
   return d.toISOString().split("T")[0];
 }
 
+function getCurrentDayName() {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return days[new Date().getDay()];
+}
+
+// Parses a time string like "9:00 AM - 10:00 AM" and returns start time in minutes since midnight
+function parseStartTimeToMinutes(timeStr) {
+  if (!timeStr) return null;
+  const startPart = timeStr.split("-")[0].trim(); // "9:00 AM"
+  const match = startPart.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return null;
+  let [, hours, minutes, meridian] = match;
+  hours = parseInt(hours, 10);
+  minutes = parseInt(minutes, 10);
+  if (meridian.toUpperCase() === "PM" && hours !== 12) hours += 12;
+  if (meridian.toUpperCase() === "AM" && hours === 12) hours = 0;
+  return hours * 60 + minutes;
+}
+
+function getCurrentMinutes() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
 export default function DashboardPage() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,8 +59,10 @@ export default function DashboardPage() {
   const [time, setTime] = useState("");
   const [students, setStudents] = useState([]);
   const [attendanceToday, setAttendanceToday] = useState({});
+  const [notifPermission, setNotifPermission] = useState("default");
   const router = useRouter();
   const today = getTodayString();
+  const notifiedClasses = useRef(new Set());
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -92,6 +118,51 @@ export default function DashboardPage() {
     });
     return () => unsubscribe();
   }, [today]);
+
+  // Request notification permission on load
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotifPermission(Notification.permission);
+    }
+  }, []);
+
+  const requestNotificationPermission = async () => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      const permission = await Notification.requestPermission();
+      setNotifPermission(permission);
+    }
+  };
+
+  // Check every minute for upcoming classes
+  useEffect(() => {
+    if (notifPermission !== "granted") return;
+
+    const checkUpcomingClasses = () => {
+      const currentDay = getCurrentDayName();
+      const currentMinutes = getCurrentMinutes();
+
+      schedule.forEach((c) => {
+        if (c.day !== currentDay) return;
+        const startMinutes = parseStartTimeToMinutes(c.time);
+        if (startMinutes === null) return;
+
+        const diff = startMinutes - currentMinutes;
+        const key = `${c.id}_${today}`;
+
+        // Notify if class starts within the next 5 minutes and hasn't been notified yet today
+        if (diff > 0 && diff <= 5 && !notifiedClasses.current.has(key)) {
+          new Notification("DASH — Class Starting Soon", {
+            body: `${c.subject} starts in ${diff} minute${diff === 1 ? "" : "s"} (${c.time})`,
+          });
+          notifiedClasses.current.add(key);
+        }
+      });
+    };
+
+    checkUpcomingClasses();
+    const interval = setInterval(checkUpcomingClasses, 60000);
+    return () => clearInterval(interval);
+  }, [schedule, notifPermission, today]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -158,7 +229,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
       <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold tracking-tight">DASH</h1>
@@ -178,7 +248,20 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-        {/* Role summary card */}
+        {notifPermission !== "granted" && (
+          <div className="bg-blue-950 border border-blue-800 rounded-xl p-4 flex items-center justify-between">
+            <p className="text-sm text-blue-200">
+              Enable notifications to get reminders before your classes start.
+            </p>
+            <button
+              onClick={requestNotificationPermission}
+              className="bg-blue-600 hover:bg-blue-700 transition px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ml-4"
+            >
+              Enable Notifications
+            </button>
+          </div>
+        )}
+
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           {userData.role === "student" && (
             <div>
@@ -218,25 +301,19 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Attendance */}
         {canMarkAttendance && (
           <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-4">Attendance — {today}</h2>
             {students.length === 0 && <p className="text-gray-400 text-sm">No student accounts found yet.</p>}
             <div className="space-y-2">
               {students.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3"
-                >
+                <div key={s.id} className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3">
                   <span className="text-sm">{s.email}</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleMarkAttendance(s.id, "present")}
                       className={`text-xs px-3 py-1.5 rounded-lg transition ${
-                        attendanceToday[s.id] === "present"
-                          ? "bg-green-600"
-                          : "bg-gray-700 hover:bg-green-700"
+                        attendanceToday[s.id] === "present" ? "bg-green-600" : "bg-gray-700 hover:bg-green-700"
                       }`}
                     >
                       Present
@@ -244,9 +321,7 @@ export default function DashboardPage() {
                     <button
                       onClick={() => handleMarkAttendance(s.id, "absent")}
                       className={`text-xs px-3 py-1.5 rounded-lg transition ${
-                        attendanceToday[s.id] === "absent"
-                          ? "bg-red-600"
-                          : "bg-gray-700 hover:bg-red-700"
+                        attendanceToday[s.id] === "absent" ? "bg-red-600" : "bg-gray-700 hover:bg-red-700"
                       }`}
                     >
                       Absent
@@ -258,7 +333,6 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {/* Schedule */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-4">Class Schedule</h2>
 
@@ -281,6 +355,8 @@ export default function DashboardPage() {
                 <option>Wednesday</option>
                 <option>Thursday</option>
                 <option>Friday</option>
+                <option>Saturday</option>
+                <option>Sunday</option>
               </select>
               <input
                 type="text"
@@ -301,10 +377,7 @@ export default function DashboardPage() {
           <div className="space-y-2">
             {schedule.length === 0 && <p className="text-gray-400 text-sm">No classes scheduled yet.</p>}
             {schedule.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3"
-              >
+              <div key={c.id} className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3">
                 <span className="text-sm">
                   <strong>{c.subject}</strong> — {c.day} @ {c.time}
                 </span>
@@ -321,7 +394,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Announcements */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-4">Announcements</h2>
 
