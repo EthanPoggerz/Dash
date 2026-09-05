@@ -58,7 +58,8 @@ export default function DashboardPage() {
   const [time, setTime] = useState("");
   const [students, setStudents] = useState([]);
   const [attendanceToday, setAttendanceToday] = useState({});
-  const [notifPermission, setNotifPermission] = useState("default");
+   const [notifPermission, setNotifPermission] = useState("default");
+  const [viewDate, setViewDate] = useState(getTodayString());
   const router = useRouter();
   const today = getTodayString();
   const notifiedClasses = useRef(new Set());
@@ -106,7 +107,7 @@ export default function DashboardPage() {
   }, [userData]);
 
   useEffect(() => {
-    const q = query(collection(db, "attendance"), where("date", "==", today));
+    const q = query(collection(db, "attendance"), where("date", "==", viewDate));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const records = {};
       snapshot.docs.forEach((doc) => {
@@ -116,7 +117,7 @@ export default function DashboardPage() {
       setAttendanceToday(records);
     });
     return () => unsubscribe();
-  }, [today]);
+  }, [viewDate]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -299,7 +300,15 @@ export default function DashboardPage() {
 
         {canMarkAttendance && (
           <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">Attendance — {today}</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Attendance — {viewDate}</h2>
+              <input
+                type="date"
+                value={viewDate}
+                onChange={(e) => setViewDate(e.target.value)}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
             {students.length === 0 && <p className="text-gray-400 text-sm">No student accounts found yet.</p>}
             <div className="space-y-2">
               {students.map((s) => (
