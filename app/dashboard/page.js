@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { auth, db } from "../firebase";
+import { auth, db, messaging } from "../firebase";
+import { getToken } from "firebase/messaging";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   doc,
@@ -134,6 +135,26 @@ export default function DashboardPage() {
     if (typeof window !== "undefined" && "Notification" in window) {
       const permission = await Notification.requestPermission();
       setNotifPermission(permission);
+
+      if (permission === "granted" && messaging) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const token = await getToken(messaging, {
+            vapidKey: "BJP_GeGpIVpYa6hYhd0ZtWXSgOvnNrA1zl9kUfoVjg56zGrCJvAYHCCKYM4VppaSn539SbWrBbw429KsgUi44DQ",
+            serviceWorkerRegistration: registration,
+          });
+
+          if (token) {
+            await setDoc(doc(db, "fcmTokens", token), {
+              token,
+              userId: userData?.uid || "unknown",
+              createdAt: serverTimestamp(),
+            });
+          }
+        } catch (err) {
+          console.error("Error getting FCM token:", err);
+        }
+      }
     }
   };
 
