@@ -153,6 +153,7 @@ export default function DashboardPage() {
           }
         } catch (err) {
           console.error("Error getting FCM token:", err);
+          alert("FCM Error: " + err.message);
         }
       }
     }

@@ -1,0 +1,1 @@
+firebase-adminsdk-fbsvc@dash-ff36f.iam.gserviceaccount.com
