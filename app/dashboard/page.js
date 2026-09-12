@@ -150,6 +150,15 @@ export default function DashboardPage() {
               userId: userData?.uid || "unknown",
               createdAt: serverTimestamp(),
             });
+          }          if (token) {
+            await setDoc(doc(db, "fcmTokens", token), {
+              token,
+              userId: userData?.uid || "unknown",
+              createdAt: serverTimestamp(),
+            });
+            alert("Token saved successfully!");
+          } else {
+            alert("No token was generated.");
           }
         } catch (err) {
           console.error("Error getting FCM token:", err);
