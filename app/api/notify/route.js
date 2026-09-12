@@ -65,8 +65,6 @@ export async function GET(request) {
     });
 
     if (upcomingClasses.length === 0) {
-      return Response.json({ message: "No upcoming classes", checked: currentDay });
-    }    if (upcomingClasses.length === 0) {
       return Response.json({ 
         message: "No upcoming classes", 
         checked: currentDay,
