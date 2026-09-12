@@ -125,7 +125,7 @@ export default function DashboardPage() {
       setNotifPermission(Notification.permission);
     }
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch((err) => {
+      navigator.serviceWorker.register("/firebase-messaging-sw.js").catch((err) => {
         console.error("Service worker registration failed:", err);
       });
     }

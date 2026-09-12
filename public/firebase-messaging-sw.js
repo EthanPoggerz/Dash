@@ -13,10 +13,12 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
+  console.log("Background message received:", payload);
   const { title, body } = payload.notification || {};
   self.registration.showNotification(title || "DASH", {
     body: body || "",
-  });
+  }).then(() => console.log("Notification shown successfully"))
+    .catch(err => console.error("Failed to show notification:", err));
 });
 
 self.addEventListener("install", (event) => {
