@@ -15,7 +15,9 @@ function getAdminApp() {
 
 function getCurrentDayName() {
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  return days[new Date().getDay()];
+  const now = new Date();
+  const phTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  return days[phTime.getUTCDay()];
 }
 
 function parseStartTimeToMinutes(timeStr) {
@@ -33,7 +35,10 @@ function parseStartTimeToMinutes(timeStr) {
 
 function getCurrentMinutes() {
   const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
+  // Adjust for Philippines timezone (UTC+8), since server runs in UTC
+  const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const phMinutes = (utcMinutes + 8 * 60) % (24 * 60);
+  return phMinutes;
 }
 
 export async function GET(request) {
