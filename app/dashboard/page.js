@@ -244,6 +244,10 @@ export default function DashboardPage() {
   const handleDeleteClass = async (id) => {
     await deleteDoc(doc(db, "schedule", id));
   };
+  
+  const handleDeleteAnnouncement = async (id) => {
+    await deleteDoc(doc(db, "announcements", id));
+  };
 
   const handleMarkAttendance = async (studentId, status) => {
     const recordId = `${today}_${studentId}`;
@@ -472,11 +476,21 @@ export default function DashboardPage() {
           <div className="space-y-3">
             {announcements.length === 0 && <p className="text-gray-400 text-sm">No announcements yet.</p>}
             {announcements.map((a) => (
-              <div key={a.id} className="bg-gray-800 rounded-lg px-4 py-3">
-                <p className="text-sm">{a.text}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  — {a.author} ({a.role})
-                </p>
+              <div key={a.id} className="bg-gray-800 rounded-lg px-4 py-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm">{a.text}</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    — {a.author} ({a.role})
+                  </p>
+                </div>
+                {canPost && (
+                  <button
+                    onClick={() => handleDeleteAnnouncement(a.id)}
+                    className="text-xs bg-red-600 hover:bg-red-700 transition px-3 py-1.5 rounded-lg whitespace-nowrap"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             ))}
           </div>
