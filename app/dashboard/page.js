@@ -281,7 +281,9 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-950 text-white">
       <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold tracking-tight">⚡ DASH</h1>
+          <h1 className="text-xl font-bold tracking-tight">
+  <span className="inline-block animate-pulse text-yellow-400">⚡</span> DASH
+</h1>
           <span className={`text-xs px-2 py-1 rounded-full ${roleColors[userData.role]} capitalize`}>
             {userData.role}
           </span>
