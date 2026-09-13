@@ -33,7 +33,7 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
       <div className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-xl p-8">
-        <h1 className="text-2xl font-bold mb-1">DASH</h1>
+        <h1 className="text-2xl font-bold mb-1">⚡ DASH</h1>
         <p className="text-gray-400 text-sm mb-6">Create your account</p>
 
         {success ? (
