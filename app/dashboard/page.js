@@ -224,6 +224,17 @@ export default function DashboardPage() {
       role: userData.role,
       createdAt: serverTimestamp(),
     });
+
+    fetch("/api/notify-announcement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: newAnnouncement,
+        author: userData.email,
+        role: userData.role,
+      }),
+    }).catch((err) => console.error("Failed to send announcement notification:", err));
+
     setNewAnnouncement("");
   };
 
