@@ -225,6 +225,7 @@ export default function DashboardPage() {
       createdAt: serverTimestamp(),
     });
 
+    console.log("About to call notify-announcement");
     fetch("/api/notify-announcement", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
