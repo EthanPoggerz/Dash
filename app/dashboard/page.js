@@ -61,6 +61,7 @@ export default function DashboardPage() {
   const [attendanceToday, setAttendanceToday] = useState({});
    const [notifPermission, setNotifPermission] = useState("default");
   const [viewDate, setViewDate] = useState(getTodayString());
+  const [nameInput, setNameInput] = useState("");
   const router = useRouter();
   const today = getTodayString();
   const notifiedClasses = useRef(new Set());
@@ -214,6 +215,14 @@ export default function DashboardPage() {
     await signOut(auth);
     router.push("/login");
   };
+  
+  const handleSaveName = async (e) => {
+    e.preventDefault();
+    if (!nameInput.trim()) return;
+    await setDoc(doc(db, "users", userData.uid), { name: nameInput }, { merge: true });
+    setUserData({ ...userData, name: nameInput });
+    setNameInput("");
+  };
 
   const handlePostAnnouncement = async (e) => {
     e.preventDefault();
@@ -301,7 +310,7 @@ export default function DashboardPage() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400">{userData.email}</span>
+          <span className="text-sm text-gray-400">{userData.name || userData.email}</span>
           <button
             onClick={handleLogout}
             className="text-sm bg-red-600 hover:bg-red-700 transition px-4 py-2 rounded-lg"
@@ -380,7 +389,7 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {students.map((s) => (
                 <div key={s.id} className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3">
-                  <span className="text-sm">{s.email}</span>
+                  <span className="text-sm">{s.name || s.email}</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleMarkAttendance(s.id, "present")}
