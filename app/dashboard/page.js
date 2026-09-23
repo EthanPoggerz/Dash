@@ -62,6 +62,7 @@ export default function DashboardPage() {
    const [notifPermission, setNotifPermission] = useState("default");
   const [viewDate, setViewDate] = useState(getTodayString());
   const [nameInput, setNameInput] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState("");
   const router = useRouter();
   const today = getTodayString();
   const notifiedClasses = useRef(new Set());
@@ -109,7 +110,15 @@ export default function DashboardPage() {
   }, [userData]);
 
   useEffect(() => {
-    const q = query(collection(db, "attendance"), where("date", "==", viewDate));
+    if (!selectedClassId) {
+      setAttendanceToday({});
+      return;
+    }
+    const q = query(
+      collection(db, "attendance"),
+      where("date", "==", viewDate),
+      where("classId", "==", selectedClassId)
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const records = {};
       snapshot.docs.forEach((doc) => {
@@ -119,7 +128,7 @@ export default function DashboardPage() {
       setAttendanceToday(records);
     });
     return () => unsubscribe();
-  }, [viewDate]);
+  }, [viewDate, selectedClassId]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -271,9 +280,16 @@ export default function DashboardPage() {
   };
 
   const handleMarkAttendance = async (studentId, status) => {
-    const recordId = `${today}_${studentId}`;
+    if (!selectedClassId) {
+      alert("Please select a class first.");
+      return;
+    }
+    const selectedClass = schedule.find((c) => c.id === selectedClassId);
+    const recordId = `${today}_${studentId}_${selectedClassId}`;
     await setDoc(doc(db, "attendance", recordId), {
       studentId,
+      classId: selectedClassId,
+      subject: selectedClass?.subject || "Unknown",
       date: today,
       status,
       markedBy: userData.email,
@@ -396,14 +412,26 @@ export default function DashboardPage() {
 
         {canMarkAttendance && (
           <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
               <h2 className="text-lg font-semibold">Attendance — {viewDate}</h2>
-              <input
-                type="date"
-                value={viewDate}
-                onChange={(e) => setViewDate(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
-              />
+              <div className="flex gap-2">
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">Select class...</option>
+                  {schedule.map((c) => (
+                    <option key={c.id} value={c.id}>{c.subject} ({c.day})</option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={viewDate}
+                  onChange={(e) => setViewDate(e.target.value)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
             </div>
             {students.length === 0 && <p className="text-gray-400 text-sm">No student accounts found yet.</p>}
             <div className="space-y-2">
