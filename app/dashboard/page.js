@@ -335,7 +335,27 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-3">Your Display Name</h2>
+          <p className="text-sm text-gray-400 mb-3">
+            Current: <span className="font-medium text-white">{userData.name || "Not set (showing email)"}</span>
+          </p>
+          <form onSubmit={handleSaveName} className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Enter your name"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 transition rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap"
+            >
+              Save Name
+            </button>
+          </form>
+        </div><div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           {userData.role === "student" && (
             <div>
               <h2 className="text-lg font-semibold mb-3">Student Overview</h2>
